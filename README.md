@@ -1,4 +1,8 @@
 # Veritas
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/WasabiThumb/veritas/test.yml?label=tests&link=https%3A%2F%2Fgithub.com%2FWasabiThumb%2Fveritas%2Factions%2Fworkflows%2Ftest.yml)
+![GitHub License](https://img.shields.io/github/license/WasabiThumb/veritas)
+![npm bundle size](https://img.shields.io/bundlephobia/min/veritas-ts)
+
 Inline object schema validator with builder syntax for JS.
 
 - 💪 Strong typing support; no need for ``@ts-ignore`` or ``as unknown``
@@ -14,10 +18,27 @@ Inline object schema validator with builder syntax for JS.
 npm install --save veritas-ts
 ```
 
+## Quick Start
+```js
+const veritas = require("veritas-ts");
+
+const vector = {
+    x: 50,
+    y: 40,
+    z: 30
+};
+
+veritas(vector)
+    .propertyType("x", "number")
+    .propertyType("y", "number")
+    .optional
+    .propertyType("z", "number", "undefined")
+    .unwrap();
+```
+
 ## Example
 ```ts
 import veritas from "veritas-ts";
-// const veritas = require("veritas-ts");
 
 type Article = {
     id: number | string;
