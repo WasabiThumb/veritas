@@ -1,0 +1,38 @@
+{
+  "name": "veritas",
+  "description": "Inline object schema validator with builder syntax",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "types": "types/index.d.ts",
+  "scripts": {
+    "prepare": "npm run build",
+    "build": "tsc",
+    "test": "npx jest"
+  },
+  "keywords": [
+    "validator",
+    "schema",
+    "json",
+    "config",
+    "types"
+  ],
+  "homepage": "https://github.com/WasabiThumb/veritas#readme",
+  "bugs": {
+    "url": "https://github.com/WasabiThumb/veritas/issues",
+    "email": "wasabithumbs@gmail.com"
+  },
+  "author": "WasabiThumb",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WasabiThumb/veritas.git"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.12",
+    "@types/node": "^22.5.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.5",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.5.4"
+  }
+}
