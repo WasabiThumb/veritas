@@ -20,7 +20,7 @@ function formatPropertyError(error: VeritasPropertyError): string {
         return `${error.target} is missing property: ${error.property}`;
     } else {
         const props = error.property as string[];
-        if (props.length === 0) {
+        if (props.length === 1) {
             return `${error.target} has extra property: ${props[0]}`;
         } else {
             return `${error.target} has extra properties: ${props.join(', ')}`;

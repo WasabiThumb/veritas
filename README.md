@@ -8,10 +8,10 @@ Inline object schema validator with builder syntax for JS.
 - 💪 Strong typing support; no need for ``@ts-ignore`` or ``as unknown``
 - 😏 Obvious, minimal syntax
 - ✅ Comprehensive test suite
-- 📚 1-line flattening of rich arrays
+- 📚 1-line [flattening](#arraynumber-number-thisnumber) of rich arrays
 - 🏃 Quick start with CJS-style default function
-- 💡 Organized error types with detailed messages
-- 🤖 Automatic inference of value labels, e.g. ``YourClass.children[3]``
+- 💡 Organized error types with [detailed messages](#errors)
+- 🤖 Automatic inference of value [labels](#labelstring-this), e.g. ``YourClass.children[3]``
 
 ## Install
 ```shell
@@ -135,15 +135,59 @@ typeof operator](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Referen
   a ``switch (typeof value)``.
 
 #### ``toError(): Error | null``
-- Creates an [Error](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error) if the
+- Creates a native JS [Error](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error) if the
   validator found an error, otherwise returns ``null``. Multiple errors are nested through [cause](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error/cause).
 
 #### ``unwrap(): void | never``
 - Throws if the validator found an error. The thrown error is as described in [toError](#toerror-error--null).
 
 #### ``errors: { code: number, target: string, ... }[]``
-- Gives the internal error objects stored on the validator. Accessing this property counts as examining
+- Gives the internal [error objects](#errors) stored on the validator. Accessing this property counts as examining
   the validator's state.
+
+## Errors
+Error codes designed to allow categorization through bitwise operations.
+For example if ``code & 4``, the error is a TypeError.
+
+- TypeError
+  - **TypeGenericError**
+    - Code: 4
+    - Message: ``{target} does not match type: {type}``
+    - Raised by: [type](#typestring-this), [propertyType](#propertytypestring-string-this)
+  - **TypeNotArrayError**
+    - Code: 5
+    - Message: ``{target} is not an array``
+    - Raised by: [array](#arraynumber-number-thisnumber), [each](#eachfunction-this)
+  - **TypeNotInstanceError**
+    - Code: 6
+    - Message: ``{target} is not an instance of {class}``
+    - Raised by: [instance](#instanceclass-this)
+- PropertyError
+  - **MissingPropertyError**
+    - Code: 9
+    - Message: ``{target} is missing property: {property}``
+    - Raised by: [property](#propertystring-function-this), [propertyType](#propertytypestring-string-this)
+  - **ExtraPropertyError**
+    - Code: 10
+    - Message: ``{target} has extra propert(y/ies): {property}``
+    - Raised by: [noExtra](#noextra-this)
+- **NullError**
+  - Code: 16
+  - Message: ``{target} is null``
+  - Raised by: [notNull](#notnull-this)
+- **ArrayBoundError**
+  - Code: 32
+  - Message: ``{target} length does not fall in bounds {bound}``
+  - Raised by: [array](#arraynumber-number-thisnumber)
+
+## Library Methods
+A few methods are assigned directly on the ``veritas`` object.
+
+#### ``dataTypes: string[]``
+- Returns an array of every possible data [type](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/typeof#description).
+
+#### ``formatError(VeritasError): string``
+- Formats an [error](#errors) (otherwise language-agnostic) into an English error message.
 
 ## License
 ```text

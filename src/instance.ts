@@ -13,10 +13,9 @@ import {
     VeritasTypeNotInstanceError
 } from "./spec";
 import {formatError} from "./logging";
+import {DATA_TYPES} from "./data";
 
-const DataTypes: Set<DataType> = new Set<DataType>([
-    "undefined", "object", "boolean", "number", "bigint", "string", "symbol", "function"
-]);
+const DataTypes: Set<DataType> = new Set<DataType>(DATA_TYPES);
 
 export class VeritasInstanceImpl<T> implements VeritasInstance<T> {
 

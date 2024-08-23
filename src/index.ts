@@ -1,8 +1,7 @@
-// @ts-ignore
-
 import {DataType, Veritas, VeritasEntry, VeritasError, VeritasLib} from "./spec";
 import {VeritasInstanceImpl} from "./instance";
 import * as logging from "./logging";
+import {DATA_TYPES} from "./data";
 
 const entry: VeritasEntry = ((value) => {
     return new VeritasInstanceImpl([ value ], false);
@@ -10,9 +9,7 @@ const entry: VeritasEntry = ((value) => {
 
 const lib: VeritasLib = {
     get dataTypes(): DataType[] {
-        return [
-            "undefined", "object", "boolean", "number", "bigint", "string", "symbol", "function"
-        ];
+        return [...DATA_TYPES];
     },
     formatError(error: VeritasError): string {
         return logging.formatError(error);
