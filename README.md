@@ -11,13 +11,13 @@ Inline object schema validator with builder syntax for JS.
 
 ## Install
 ```shell
-npm install --save veritas
+npm install --save veritas-ts
 ```
 
 ## Example
 ```ts
-import veritas from "veritas";
-// const veritas = require("veritas");
+import veritas from "veritas-ts";
+// const veritas = require("veritas-ts");
 
 type Article = {
     id: number | string;
