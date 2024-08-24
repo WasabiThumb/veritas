@@ -1,6 +1,8 @@
 import {
-    DataType, JSClass,
+    DataType,
+    JSClass,
     MatchesDataType,
+    NumberLike,
     VeritasArrayBoundError,
     VeritasError,
     VeritasErrorCode,
@@ -10,10 +12,12 @@ import {
     VeritasNullError,
     VeritasTypeGenericError,
     VeritasTypeNotArrayError,
-    VeritasTypeNotInstanceError
+    VeritasTypeNotInstanceError, VeritasValueBoundError,
+    VeritasValueGenericError
 } from "./spec";
 import {formatError} from "./logging";
 import {DATA_TYPES} from "./data";
+import {NumberRange} from "./range";
 
 const DataTypes: Set<DataType> = new Set<DataType>(DATA_TYPES);
 
@@ -27,7 +31,7 @@ export class VeritasInstanceImpl<T> implements VeritasInstance<T> {
     private _fatal: boolean = false;
     private _passedStrictTypeCheck: boolean = false;
     private _passedStrictNullCheck: boolean = false;
-    private _matchedTypes: Set<DataType> = new Set<DataType>();
+    private _matchedTypes: Set<DataType | "array"> = new Set<DataType | "array">();
     private _checkedProperties: Set<string | number | symbol> = new Set<string | number | symbol>();
 
     constructor(value: T[], arrayMode: boolean) {
@@ -53,7 +57,12 @@ export class VeritasInstanceImpl<T> implements VeritasInstance<T> {
             let firstType: DataType | null = null;
             let remainingTypes: DataType[] = new Array(matchedTypesCount - 1);
             let head: number = -1;
+            let checkArray: boolean = false;
             for (let matchedType of this._matchedTypes) {
+                if (matchedType === "array") {
+                    checkArray = true;
+                    continue;
+                }
                 if (head === -1) {
                     firstType = matchedType;
                 } else {
@@ -61,7 +70,9 @@ export class VeritasInstanceImpl<T> implements VeritasInstance<T> {
                 }
                 head++;
             }
-            this.type(firstType!, ...remainingTypes);
+
+            if (head !== -1) this.type(firstType!, ...remainingTypes);
+            if (!this._fatal && checkArray) this._checkArray();
             this._matchedTypes.clear();
         }
         return [...this._errors];
@@ -230,65 +241,44 @@ export class VeritasInstanceImpl<T> implements VeritasInstance<T> {
         return this;
     }
 
+    private _checkArray(): void {
+        if (this._arrayMode) return;
+        this.type("object");
+        if (this._fatal) return;
+
+        let v: T;
+        for (let i=0; i < this._value.length; i++) {
+            v = this._value[i];
+            if (Array.isArray(v)) continue;
+            this._fatal = true;
+            this._errors.push({
+                code: VeritasErrorCode.TYPE_NOT_ARRAY,
+                target: this._iteratorLabel(i),
+                type: ["object"]
+            } as VeritasTypeNotArrayError);
+            break;
+        }
+    }
+
     array(boundA?: number, boundB?: number | "+" | "-"): T extends ArrayLike<any> ? VeritasInstance<T[number]> : VeritasInstance<any> {
         if (this._arrayMode) throw new Error("Cannot perform validation on nested arrays");
-        this.type("object");
+        this._checkArray();
         if (this._fatal) {
             // @ts-ignore
             return this;
         }
 
-        const v: T = this._value[0];
-        if (!Array.isArray(v)) {
-            this._fatal = true;
-            this._errors.push({
-                code: VeritasErrorCode.TYPE_NOT_ARRAY,
-                target: this._label,
-                type: ["object"]
-            } as VeritasTypeNotArrayError);
-            // @ts-ignore
-            return this;
-        }
-
-        const vl: number = v.length;
+        const v = this._value[0] as unknown as T & any[];
         if (typeof boundA === "number") {
-            boundA = Math.trunc(boundA);
+            const bound = NumberRange.of(boundA, boundB).truncate();
 
-            let descriptor: string | null = null;
-            let b: number;
-            if (typeof boundB === "string") {
-                if (boundB === "+") {
-                    b = Number.MAX_SAFE_INTEGER;
-                    descriptor = `${boundA}+`;
-                } else if (boundB === "-") {
-                    b = boundA;
-                    descriptor = `${boundA}-`;
-                    boundA = Number.MIN_SAFE_INTEGER;
-                } else {
-                    b = parseInt(boundB);
-                }
-            } else if (typeof boundB === "number") {
-                b = boundB;
-                b = Math.trunc(b);
-            } else {
-                b = boundA;
-            }
-
-            if (isNaN(boundA) || isNaN(b) || (b < boundA)) {
-                throw new Error("Invalid array bounds: " + boundA + " to " + b);
-            }
-
-            if (vl < boundA || vl > b) {
+            if (!bound.contains(v.length)) {
                 this._fatal = true;
-
                 this._errors.push({
                     code: VeritasErrorCode.ARRAY_BOUND,
                     target: this._label,
-                    bound: (descriptor === null) ? `${boundA} - ${b}` : descriptor
+                    bound: bound.descriptor
                 } satisfies VeritasArrayBoundError);
-
-                // @ts-ignore
-                return this;
             }
         }
 
@@ -362,6 +352,101 @@ export class VeritasInstanceImpl<T> implements VeritasInstance<T> {
                 }
                 if (this._importErrors("", child)) break;
             }
+        }
+
+        return this;
+    }
+
+    matchArray<C>(
+        withCase?: (veritas: VeritasInstance<T extends C[] ? C : T>) => void,
+        withNonArrayCase?: (veritas: VeritasInstance<Exclude<T, any[]>>) => void
+    ): VeritasInstance<T> {
+        if (this._fatal) return this;
+        if (this._matchedTypes.has("array")) throw new Error("Array matched multiple times");
+        this._matchedTypes.add("array");
+
+        let v: T;
+        for (let i=0; i < this._value.length; i++) {
+            const label = this._iteratorLabel(i);
+            v = this._value[i];
+
+            if ((typeof v) === "object") {
+                let child: VeritasInstanceImpl<any>;
+                if (Array.isArray(v)) {
+                    child = new VeritasInstanceImpl(v as C[], true);
+                    child.label(label);
+                    if (typeof withCase === "function") {
+                        // @ts-ignore
+                        withCase(child);
+                    }
+                } else {
+                    child = new VeritasInstanceImpl([v], false);
+                    child.label(label);
+                    if (typeof withNonArrayCase === "function") {
+                        // @ts-ignore
+                        withNonArrayCase(child);
+                    }
+                }
+                if (this._importErrors("", child)) break;
+            }
+        }
+
+        return this;
+    }
+
+    in<Q>(values: Iterable<Q>): VeritasInstance<Q extends T ? Q : T> {
+        if (this._fatal) {
+            // @ts-ignore
+            return this;
+        }
+
+        let v: T;
+        outer:
+        for (let i=0; i < this._value.length; i++) {
+            v = this._value[i];
+
+            for (let allowed of values) {
+                // @ts-ignore
+                if (v === allowed) continue outer;
+            }
+
+            this._fatal = true;
+            this._errors.push({
+                code: VeritasErrorCode.VALUE,
+                target: this._iteratorLabel(i),
+                got: v,
+                expected: values
+            } satisfies VeritasValueGenericError);
+            break;
+        }
+
+        // @ts-ignore
+        return this;
+    }
+
+    equals<Q>(value: Q): VeritasInstance<Q extends T ? Q : T> {
+        return this.in([value]);
+    }
+
+    range(a: NumberLike, b?: "+" | "-" | NumberLike): VeritasInstance<T> {
+        if (this._fatal) return this;
+
+        const range = NumberRange.of(a, b);
+
+        let v: T;
+        for (let i=0; i < this._value.length; i++) {
+            v = this._value[i];
+            if (range.contains(v)) continue;
+
+            this._fatal = true;
+            this._errors.push({
+                code: VeritasErrorCode.VALUE_BOUND,
+                target: this._iteratorLabel(i),
+                got: v,
+                expected: range,
+                bound: range.descriptor
+            } satisfies VeritasValueBoundError);
+            break;
         }
 
         return this;

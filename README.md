@@ -118,10 +118,7 @@ typeof operator](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Referen
 #### ``array(number?, number?): this[number]``
 - Asserts that the value is an array with the specified bounds. After this call, the instance will perform checks
   on each array member.
-- If no arguments are given: no bounds check is performed
-- If 1 argument is given: the array must be exactly that length
-- If 2 arguments are given: the array length must fall in that range (inclusive). You can also pass ``"+"`` or ``"-"``
-  as the 2nd argument, meaning ``length >= a`` and ``length <= a`` respectively.
+- If no arguments are given, no bounds check is performed. Otherwise, the bounds check follows the same rules as [range](#rangeany-any-this)
 
 #### ``each(function): this``
 - Asserts that the value is *iterable* (e.g. an array) and calls the specified validation function
@@ -133,6 +130,24 @@ typeof operator](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Referen
   of the value matches the given type. When the state of the validator is tested, for example with
   [unwrap](#unwrap-void--never), an error is generated if no matches have passed. Hence, this functions like
   a ``switch (typeof value)``.
+
+#### ``matchArray(function?, function?): this``
+- Similar to [match](#matchstring-function-this), but only satisfied if the value is both an ``object`` and satisfies
+  ``Array.isArray``. The given function will validate array values, using the same flattening as [array](#arraynumber-number-thisnumber).
+  If when the value is an object it is also expected to be an array, ``.match("object", (v) => v.array()...)`` is better.
+- A second function can be supplied, which will run when the value is an ``object`` but not an array.
+
+#### ``in(Iterable): this``
+- Asserts that some value contained by the given iterable (e.g. an array) is strictly equal to the value being validated.
+
+#### ``equals(any): this``
+- Asserts that the value is strictly equal to the given value. Identical to ``.in([value])``.
+
+#### ``range(any, any): this``
+- Asserts that the value is within the specified range after numerical [coercion](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures#type_coercion).
+- If 1 argument is given: the value must exactly equal ``a``
+- If 2 arguments are given: the value must fall in that range (inclusive). You can also pass ``"+"`` or ``"-"``
+  as the 2nd argument, meaning ``value >= a`` and ``value <= a`` respectively.
 
 #### ``toError(): Error | null``
 - Creates a native JS [Error](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error) if the
@@ -179,6 +194,15 @@ For example if ``code & 4``, the error is a TypeError.
   - Code: 32
   - Message: ``{target} length does not fall in bounds {bound}``
   - Raised by: [array](#arraynumber-number-thisnumber)
+- ValueError
+  - **ValueGenericError**
+    - Code: 64
+    - Message: ``{target} has illegal value: expected {expected}, got {got}``
+    - Raised by: in, equals
+  - **ValueBoundError**
+    - Code: 65
+    - Message: ``{target} value ({got}) does not fall in bounds {bound}``
+    - Raised by: range
 
 ## Library Methods
 A few methods are assigned directly on the ``veritas`` object.
