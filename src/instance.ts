@@ -1,5 +1,5 @@
 import {
-    DataType,
+    DataType, JSClass,
     MatchesDataType,
     VeritasArrayBoundError,
     VeritasError,
@@ -125,7 +125,7 @@ export class VeritasInstanceImpl<T> implements VeritasInstance<T> {
         return this;
     }
 
-    instance<I>(constructor: { new(): I }): VeritasInstance<T & I> {
+    instance<I>(constructor: JSClass<I>): VeritasInstance<T & I> {
         this.type("object").notNull();
         if (this._fatal) return this as unknown as VeritasInstance<T & I>;
 

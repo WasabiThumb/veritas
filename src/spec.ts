@@ -1,4 +1,6 @@
 
+export type JSClass<T> = { prototype: any, name: string, new(...args: any[]): T };
+
 export type DataType = "undefined" | "object" | "boolean" | "number" | "bigint" | "string" | "symbol" | "function";
 
 export type MatchesDataType<T extends string> = T extends "undefined" ? undefined :
@@ -40,7 +42,7 @@ export type VeritasTypeNotInstanceError = {
     readonly target: string;
     readonly code: VeritasErrorCode.TYPE_NOT_INSTANCE;
     readonly type: ["object"];
-    readonly class: { new(): any };
+    readonly class: JSClass<any>;
 }
 
 export type VeritasTypeGenericError = {
@@ -114,7 +116,7 @@ export type VeritasInstance<T> = {
     /**
      * Checks that the instance is an instance of a class. Also, implicitly checks if the type is "object".
      */
-    instance<I>(constructor: { new(): I }): VeritasInstance<T & I>;
+    instance<I>(constructor: JSClass<I>): VeritasInstance<T & I>;
 
     /**
      * Asserts that the instance is not null. Does not check if the instance is an object, for that use

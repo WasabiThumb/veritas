@@ -12,6 +12,7 @@ type Complex = {
         count: number;
         text: string;
         meta?: symbol;
+        pattern?: RegExp;
     },
     children: (Complex0 | number)[],
 };
@@ -19,7 +20,8 @@ type Complex = {
 const data: Complex = {
     child: {
         count: 5,
-        text: "some text"
+        text: "some text",
+        pattern: /[A-F\d]+/i
     },
     children: [
         {
@@ -42,7 +44,9 @@ test("complex", () => {
             .property("child", (v) => {
                 v.propertyType("count", "number")
                     .propertyType("text", "string")
-                    .optional.propertyType("meta", "symbol")
+                    .optional
+                    .propertyType("meta", "symbol")
+                    .property("pattern", (v) => v.instance(RegExp))
             })
             .property("children", (v) => {
                 v.array(3, "+")
